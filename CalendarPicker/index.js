@@ -313,6 +313,12 @@ export default class CalendarPicker extends Component {
       this.setState({ currentMonth, currentYear, renderMonthParams });
     }
     const currentMonthYear = moment({year, month, hour: 12});
+    // Keep the day the same (if able).
+    if (!this.props.allowRangeSelection)
+    {
+      this.safeSetDay(currentMonthYear, this.state.selectedStartDate.date());
+    }
+    this.limitDate(currentMonthYear);
     this.props.onMonthChange && this.props.onMonthChange(currentMonthYear);
   }
 
@@ -326,6 +332,45 @@ export default class CalendarPicker extends Component {
     this.setState({
       currentView: 'months'
     });
+  }
+
+  /**
+   * Set the day of date to the one given, limiting to the end of the month as required.
+   */
+  safeSetDay = (date, day) => {
+    if (day <= date.daysInMonth())
+    {
+      date.date(day);
+    }
+    else
+    {
+      date.date(date.daysInMonth());
+    }
+  }
+
+  /**
+   * Limit the date to be on or before the maxDate (if specified).
+   * Limit the date to be on or after the minDate (if specified).
+   */
+  limitDate = (date) => {
+    const { minDate, maxDate } = this.state;
+
+    // Limit the date to be on or before the maxDate (if specified).
+    if (maxDate)
+    {
+      while (date.isAfter(maxDate, "day"))
+      {
+        date.subtract(1, "day");
+      }
+    }
+    // Limit the date to be on or after the minDate (if specified).
+    if (minDate)
+    {
+      while (date.isBefore(minDate, "day"))
+      {
+        date.add(1, "day");
+      }
+    }
   }
 
   handleOnSelectMonthYear = ({month, year}) => {
@@ -343,6 +388,16 @@ export default class CalendarPicker extends Component {
       currentView: 'days',
       ...scrollableState,
     });
+
+    // Update the selected date keeping the day the same and just changing the month if possible.
+    const currentMonthYear = moment({ year: currentYear, month: currentMonth, hour: 12 });
+    // Keep the day the same (if able).
+    if (!this.props.allowRangeSelection)
+    {
+      this.safeSetDay(currentMonthYear, this.state.selectedStartDate.date());
+    }
+    this.limitDate(currentMonthYear);
+    this.props.onMonthChange && this.props.onMonthChange(currentMonthYear);
   }
 
   resetSelections = () => {
